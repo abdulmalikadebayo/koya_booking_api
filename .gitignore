@@ -1,0 +1,16 @@
+.DS_Store
+.fleet/
+.vscode/
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Django
+db.sqlite3
+staticfiles/
+logs/
