@@ -39,3 +39,18 @@ def reset(client):
         return client.post("/reset", {"slots": list(slots)}, format="json")
 
     return _reset
+
+
+@pytest.fixture
+def book(client):
+    """POST /bookings through the API; extra kwargs are request headers."""
+
+    def _book(slot_id="s1", name="Ada Obi", email="ada@example.com", **headers):
+        return client.post(
+            "/bookings",
+            {"slot_id": slot_id, "name": name, "email": email},
+            format="json",
+            **headers,
+        )
+
+    return _book
