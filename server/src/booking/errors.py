@@ -1,5 +1,11 @@
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
+
+
+class Conflict(APIException):
+    status_code = 409
+    default_detail = "conflict"
 
 
 def _first_message(data) -> str:

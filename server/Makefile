@@ -4,6 +4,15 @@ export PIPENV_VERBOSITY=-1
 run:
 	pipenv run python src/manage.py runserver 0.0.0.0:8001
 
+# Tests run against a local Postgres in Docker (fast); the app itself uses .env (Supabase)
+.PHONY: db
+db:
+	docker start koya-pg || docker run -d --name koya-pg -e POSTGRES_PASSWORD=pg -e POSTGRES_DB=koya -p 5433:5432 postgres:16
+
+.PHONY: test
+test:
+	PIPENV_DONT_LOAD_ENV=1 DB_HOST=localhost DB_PORT=5433 DB_USER=postgres DB_PASSWORD=pg DB_NAME=koya pipenv run pytest
+
 .PHONY: shell
 shell:
 	pipenv run python src/manage.py shell

@@ -3,6 +3,28 @@ from datetime import timezone as dt_timezone
 from rest_framework import serializers
 
 
+class StrictCharField(serializers.CharField):
+    """Only real strings: DRF would otherwise accept 5 as "5"."""
+
+    def to_internal_value(self, data):
+        if not isinstance(data, str):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+class StrictEmailField(serializers.EmailField):
+    def to_internal_value(self, data):
+        if not isinstance(data, str):
+            self.fail("invalid")
+        return super().to_internal_value(data).lower()
+
+
+class NewBookingSerializer(serializers.Serializer):
+    slot_id = StrictCharField(max_length=64)
+    name = StrictCharField(max_length=255)
+    email = StrictEmailField(max_length=320)
+
+
 def iso_z(dt) -> str:
     """2026-12-10T09:00:00Z style UTC timestamp."""
     return dt.astimezone(dt_timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

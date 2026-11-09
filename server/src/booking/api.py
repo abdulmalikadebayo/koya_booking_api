@@ -1,12 +1,19 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef
 
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Booking, BookingAttempt, IdempotencyRecord, Slot
-from .serializers import ResetSerializer, booking_to_dict, slot_to_dict
+from . import clock
+from .errors import Conflict
+from .serializers import (
+    NewBookingSerializer,
+    ResetSerializer,
+    booking_to_dict,
+    slot_to_dict,
+)
 
 
 class NotFoundAPIView(APIView):
@@ -52,10 +59,27 @@ class SlotListAPIView(APIView):
 
 class BookingListCreateAPIView(APIView):
     def post(self, request):
-        slot = Slot.objects.get(pk=request.data["slot_id"])
-        booking = Booking.objects.create(
-            slot=slot, name=request.data["name"], email=request.data["email"]
-        )
+        serializer = NewBookingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            with transaction.atomic():
+                # Row lock: concurrent bookings for one slot queue up here
+                try:
+                    slot = Slot.objects.select_for_update().get(pk=data["slot_id"])
+                except Slot.DoesNotExist:
+                    raise NotFound("slot not found")
+                if slot.start <= clock.now():
+                    raise ValidationError("slot has already started")
+                if slot.bookings.filter(status=Booking.Status.CONFIRMED).exists():
+                    raise Conflict("slot already booked")
+                booking = Booking.objects.create(
+                    slot=slot, name=data["name"], email=data["email"]
+                )
+        except IntegrityError:
+            # Backstop: the one_confirmed_per_slot constraint refused a duplicate
+            raise Conflict("slot already booked")
         return Response(booking_to_dict(booking), status=201)
 
 
@@ -65,4 +89,16 @@ class BookingDetailAPIView(APIView):
             booking = Booking.objects.get(pk=id)
         except Booking.DoesNotExist:
             raise NotFound("booking not found")
+        return Response(booking_to_dict(booking))
+
+    def delete(self, request, id):
+        with transaction.atomic():
+            try:
+                booking = Booking.objects.select_for_update().get(pk=id)
+            except Booking.DoesNotExist:
+                raise NotFound("booking not found")
+            if booking.status == Booking.Status.CANCELLED:
+                raise Conflict("booking already cancelled")
+            booking.status = Booking.Status.CANCELLED
+            booking.save(update_fields=["status"])
         return Response(booking_to_dict(booking))
