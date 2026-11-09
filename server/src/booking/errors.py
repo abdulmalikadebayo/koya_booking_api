@@ -8,6 +8,11 @@ class Conflict(APIException):
     default_detail = "conflict"
 
 
+class UnprocessableEntity(APIException):
+    status_code = 422
+    default_detail = "unprocessable"
+
+
 def _first_message(data) -> str:
     """Flatten DRF error data (str, list or dict) to its first message."""
     if isinstance(data, dict):
