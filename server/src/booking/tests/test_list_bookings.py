@@ -17,12 +17,26 @@ def slots(n):
 
 
 @pytest.fixture
-def booked(reset, book):
-    """Book n slots for one email; returns the booking ids in creation order."""
+def booked(reset):
+    """Create n bookings for one email directly in the database (the API would
+    rate limit more than 5 per minute); returns the ids in creation order."""
 
     def _booked(n, email="ada@example.com"):
+        from datetime import datetime, timedelta, timezone
+
+        from booking.models import Booking, Slot
+
         reset(*slots(n))
-        return [book(f"s{i}", email=email).json()["id"] for i in range(n)]
+        base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        return [
+            Booking.objects.create(
+                slot=Slot.objects.get(pk=f"s{i}"),
+                name="Ada",
+                email=email,
+                created_at=base + timedelta(minutes=i),
+            ).id
+            for i in range(n)
+        ]
 
     return _booked
 

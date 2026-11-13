@@ -1,12 +1,12 @@
 from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef, Q
 
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Booking, BookingAttempt, IdempotencyRecord, Slot
-from . import clock, idempotency
+from . import clock, idempotency, ratelimit
 from .pagination import decode_cursor, encode_cursor
 from .errors import Conflict, UnprocessableEntity
 from .serializers import (
@@ -104,6 +104,12 @@ class BookingListCreateAPIView(APIView):
         )
 
     def post(self, request):
+        email = ratelimit.usable_email(request.data)
+        if email:
+            wait = ratelimit.check_and_record(email, clock.now())
+            if wait is not None:
+                raise Throttled(wait=wait, detail="too many booking attempts")
+
         key = request.headers.get("Idempotency-Key")
         if not key:
             return self.create_booking(request)

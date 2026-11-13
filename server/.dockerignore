@@ -1,0 +1,19 @@
+# Secrets and local config: never bake these into the image
+.env
+.env.*
+!.env.template
+
+# Local environments and caches
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+db.sqlite3
+logs
+
+# Not needed at runtime
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md

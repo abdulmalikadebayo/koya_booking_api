@@ -98,6 +98,9 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD"),
         "HOST": os.environ.get("DB_HOST"),
         "PORT": os.environ.get("DB_PORT"),
+        # Keep connections open between requests: opening one to a remote
+        # database costs several round trips.
+        "CONN_MAX_AGE": int(os.environ.get("CONN_MAX_AGE", "60")),
     }
 }
 

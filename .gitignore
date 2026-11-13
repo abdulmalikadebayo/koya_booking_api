@@ -16,3 +16,15 @@ staticfiles/
 logs/
 docs
 CLAUDE.md
+
+# Virtualenvs and local tooling
+.venv/
+.superpowers/
+.claude/
+.cursor/
+AGENTS.md
+
+# Logs and local env files
+*.log
+.env.local
+.env.*.local

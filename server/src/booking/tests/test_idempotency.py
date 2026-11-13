@@ -77,8 +77,9 @@ def test_concurrent_same_key_creates_one_booking(reset):
         finally:
             connection.close()
 
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        results = list(pool.map(attempt, range(10)))
+    # 5 requests: the most one email may send in a minute
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        results = list(pool.map(attempt, range(5)))
 
     assert {code for code, _ in results} == {201}
     assert len({booking_id for _, booking_id in results}) == 1
