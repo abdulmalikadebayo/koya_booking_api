@@ -7,8 +7,8 @@ A clinic appointment booking API and a small web page that uses it. Built for Ta
 
 ## Live
 
-- API base URL: _add after deploy_
-- Web page: _add after deploy_
+- API base URL: https://koya-booking-api-gndp.onrender.com
+- Web page: https://koya-booking-api-three.vercel.app
 
 ## What it does
 
